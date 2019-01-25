@@ -14,49 +14,65 @@ import edu.wpi.first.wpilibj.buttons.JoystickButton;
 import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
 import edu.wpi.cscore.UsbCamera;
 import edu.wpi.first.wpilibj.CameraServer;
+import edu.wpi.first.wpilibj.XboxController;
 //import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 //import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 
-/**
- * The VM is configured to automatically run this class, and to call the
- * functions corresponding to each mode, as described in the IterativeRobot
- * documentation. If you change the name of this class or the package after
- * creating this project, you must also update the manifest file in the resource
- * directory.
- */
 public class Robot extends IterativeRobot {
-	private DifferentialDrive m_robotDrive
+	//Robot objects(objects from the WPI API)
+	private final DifferentialDrive m_robotDrive
 			= new DifferentialDrive(new Spark(0), new Spark(1));
-	//private Spark motor2 = new Spark(1);
-	private Spark control = new Spark(2);
-	private Joystick m_stick = new Joystick(0);
-	private Joystick joystick2 = new Joystick(1);
-	private Timer m_timer = new Timer();
+	private final Spark control = new Spark(2);
+	private final Joystick m_stick = new Joystick(0);
+	private final XboxController xbox = new XboxController(1);
+	private final Timer m_timer = new Timer();
+	private static final String kDefaultAuto = "Default";
+	private static final String kShowcaseAuto = "Showcase";
+	private static final String kDriveAuto = "Drive";
+	private String m_autoSelected;
+	private final SendableChooser<String> m_chooser = new SendableChooser<>();
+
+	//Custom objects(objects from our own classes)
+	private Auto auto = new Auto();
+
+	//Variables
 	boolean climberFlag = false;
 	JoystickButton aButton;
 	JoystickButton bButton;
 	JoystickButton triggerJoystick;
-	
-	
+
+
 	/**
 	 * This function is run when the robot is first started up and should be
 	 * used for any initialization code.
 	 */
 	@Override
 	public void robotInit() {
+		m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
+		m_chooser.addOption("Showcase", kShowcaseAuto);
+		m_chooser.addOption("Drive", kShowcaseAuto);
+    	SmartDashboard.putData("Auto choices", m_chooser);
 		
 		UsbCamera cam = CameraServer.getInstance().startAutomaticCapture();
 		
 	}
+	
 
 	/**
 	 * This function is run once each time the robot enters autonomous mode.
 	 */
 	@Override
 	public void autonomousInit() {
+		m_autoSelected = m_chooser.getSelected();
+    	// m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
+		System.out.println("Auto selected: " + m_autoSelected);
+		
 		m_timer.reset();
 		m_timer.start();
 	}
@@ -66,12 +82,22 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void autonomousPeriodic() {
-		// Drive for 2 seconds
-		if (m_timer.get() < 2.0) {
-			m_robotDrive.arcadeDrive(0.5, 0.0); // drive forwards half speed
-		} else {
-			m_robotDrive.stopMotor(); // stop robot
-		}
+		auto.Cracker(m_robotDrive, m_timer);
+
+		// switch (m_autoSelected) {
+		// 	case kShowcaseAuto:
+		// 		auto.showcase(m_robotDrive);
+		// 	  break;
+		// 	case kDriveAuto:
+		// 		auto.drive(m_robotDrive, 5.0, 0.5);
+		// 	  break;
+		// 	case kDefaultAuto:
+		// 	default:
+		// 	  auto.noob(m_robotDrive);
+		// 	  break;
+		//   }
+		
+		
 	}
 
 	/**
@@ -79,6 +105,9 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void teleopInit() {
+		
+
+		control.set(0.0);
 	}
 
 	/**
@@ -86,39 +115,12 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void teleopPeriodic() {
-		m_robotDrive.arcadeDrive(m_stick.getY(), m_stick.getX());
+		boolean triggerJoystick = m_stick.getRawButton(1);
 		
-		boolean aButton = m_stick.getRawButton(1);
-		boolean bButton = m_stick.getRawButton(2);
-		boolean triggerJoystick = joystick2.getRawButton(1);
-		
-		/*if(aButton) {
-			if (!climberFlag) {
-				control.set(1.0);
-				climberFlag = true;
-			}
-		}else if (climberFlag){
-			control.set(0.0);
-			climberFlag = false;
-		}*/
-		
-		
-		if(triggerJoystick){
+		m_robotDrive.arcadeDrive(xbox.getY(), xbox.getX());
+
+		if(xbox.getYButton()){
 			control.set(1.0);
-		}else {
-			control.set(0.0);
-		}
-		
-		if(aButton) {
-			control.set(1.0);
-		}else {
-			control.set(0.0);
-		}
-		
-		if(bButton) {
-			control.set(-1.0);
-		}else {
-			control.set(0.0);
 		}
 	}
 
@@ -127,5 +129,8 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void testPeriodic() {
+
+		
 	}
 }
+
