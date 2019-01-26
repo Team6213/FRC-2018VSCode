@@ -43,7 +43,6 @@ public class Auto {
             m_robotDrive.arcadeDrive(1.0, 0.0);
         } else {
             m_robotDrive.stopMotor();
-            
         }
     }
 }
